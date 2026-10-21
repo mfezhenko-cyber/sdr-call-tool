@@ -1,0 +1,668 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>SDR Qualification Call</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600&display=swap">
+<style>
+/* Layout: call cockpit. Sticky 5:00 timeline on top, the call's five blocks on the left, live lead status + CRM card on the right. Intch palette: one blue accent, grey surfaces, status colours only for status. */
+:root{
+  --bg:#FFFFFF; --surface:#F8F9F9; --surface-line:#F2F4F6; --line:#E2E6EB;
+  --fg:#000000; --fg-2:#545D6C; --fg-3:#919CAD;
+  --accent:#4959DC; --accent-soft:#F0F3FF; --accent-line:#E5E8FF; --on-accent:#FFFFFF;
+  --ok:#1CA04C; --ok-soft:#E8FCEC; --ok-ink:#0B7034;
+  --warn:#E49500; --warn-soft:#FFF5DE; --warn-ink:#8A5A00;
+  --bad:#DA2D2D; --bad-soft:#FFEEEE; --bad-ink:#B01F1F;
+  --font:"Montserrat","Helvetica Neue",Arial,sans-serif;
+  --r-l:20px; --r-m:14px; --r-s:10px;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E1015; --surface:#171A21; --surface-line:#1F232B; --line:#2A2F3A;
+    --fg:#F3F5F8; --fg-2:#AEB6C3; --fg-3:#7F8898;
+    --accent:#8592FF; --accent-soft:#1C2142; --accent-line:#2C3466; --on-accent:#0E1015;
+    --ok:#3DC772; --ok-soft:#12291B; --ok-ink:#7BE0A2;
+    --warn:#F0A928; --warn-soft:#2D2310; --warn-ink:#F4C46A;
+    --bad:#FF6464; --bad-soft:#341617; --bad-ink:#FF9C9C;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E1015; --surface:#171A21; --surface-line:#1F232B; --line:#2A2F3A;
+  --fg:#F3F5F8; --fg-2:#AEB6C3; --fg-3:#7F8898;
+  --accent:#8592FF; --accent-soft:#1C2142; --accent-line:#2C3466; --on-accent:#0E1015;
+  --ok:#3DC772; --ok-soft:#12291B; --ok-ink:#7BE0A2;
+  --warn:#F0A928; --warn-soft:#2D2310; --warn-ink:#F4C46A;
+  --bad:#FF6464; --bad-soft:#341617; --bad-ink:#FF9C9C;
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font-family:var(--font);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+h1,h2,h3,p{margin:0}
+.wrap{max-width:1240px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.mute{color:var(--fg-3)}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* header */
+.top{padding-block:28px 22px;display:flex;flex-direction:column;gap:8px}
+.top h1{font-size:clamp(24px,3.2vw,34px);font-weight:500;letter-spacing:-.01em;line-height:1.2;text-wrap:balance}
+.lede{color:var(--fg-2);max-width:65ch}
+.setup{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:12px;margin-top:12px;align-items:end}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.label,.field label{font-size:12px;font-weight:600;color:var(--fg-2)}
+input[type=text],textarea{width:100%;font:inherit;font-size:14px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:var(--r-s);padding:10px 12px}
+input[type=text]::placeholder,textarea::placeholder{color:var(--fg-3)}
+input[type=text]:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-line)}
+textarea{resize:vertical;min-height:64px;line-height:1.45}
+.seg-toggle{display:flex;background:var(--surface);border:1px solid var(--surface-line);border-radius:999px;padding:3px}
+.seg-toggle button{font:600 13px var(--font);border:0;background:transparent;color:var(--fg-2);padding:8px 14px;border-radius:999px;cursor:pointer;white-space:nowrap}
+.seg-toggle button[aria-pressed=true]{background:var(--bg);color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+
+/* buttons */
+.btn{font:600 13.5px var(--font);border-radius:999px;padding:9px 16px;border:1px solid var(--line);background:var(--bg);color:var(--fg);cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--fg-3)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.sm{padding:6px 12px;font-size:12.5px}
+.btn.danger{border-color:var(--bad);color:var(--bad-ink)}
+
+/* timer bar */
+.timerbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:6;background:var(--bg);border-block:1px solid var(--line)}
+.tb-in{display:flex;align-items:center;gap:20px;padding-block:12px}
+.clock{display:flex;flex-direction:column;min-width:118px}
+.clock .t{font-size:30px;font-weight:500;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.t-sub{font-size:12px;color:var(--fg-2);margin-top:4px;white-space:nowrap}
+.timerbar.over .clock .t,.timerbar.over #t-now{color:var(--bad-ink)}
+.tb-btns{display:flex;gap:8px}
+.segs{flex:1;min-width:0;display:grid;grid-template-columns:30fr 30fr 150fr 60fr 30fr;gap:4px}
+.seg{display:flex;flex-direction:column;gap:5px;min-width:0}
+.seg .sl{font-size:11.5px;font-weight:600;color:var(--fg-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seg .track{height:8px;border-radius:4px;background:var(--surface-line);overflow:hidden;border:1px solid var(--line)}
+.seg .fill{display:block;height:100%;width:0;background:var(--accent);opacity:.45}
+.seg.active .sl{color:var(--accent)}
+.seg.active .fill{opacity:1}
+.seg .st{font-size:11px;color:var(--fg-3);text-align:right;font-variant-numeric:tabular-nums}
+.timerbar.over .seg .fill{background:var(--bad)}
+
+/* main grid */
+.main{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:28px;align-items:start;padding-block:24px 40px}
+.steps{display:flex;flex-direction:column;gap:16px;min-width:0}
+.prep{background:var(--accent-soft);border:1px solid var(--accent-line);border-radius:var(--r-l);padding:18px 20px;display:flex;flex-direction:column;gap:10px}
+.prep h2{font-size:15px;font-weight:600;color:var(--accent)}
+.prep ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:8px}
+.prep li{display:grid;grid-template-columns:20px 1fr;gap:8px;color:var(--fg)}
+.prep li::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--accent);margin-top:7px;justify-self:center}
+
+.step{border:1px solid var(--line);border-radius:var(--r-l);padding:20px 22px;background:var(--bg);display:flex;flex-direction:column;gap:14px;transition:border-color .2s,box-shadow .2s;scroll-margin-top:110px}
+.step.now{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-line)}
+.step-head{display:flex;align-items:center;gap:12px}
+.num{width:30px;height:30px;border-radius:50%;background:var(--accent-soft);color:var(--accent);font-weight:600;font-size:14px;display:grid;place-items:center;flex:none}
+.step.now .num{background:var(--accent);color:var(--on-accent)}
+.step-head h2{font-size:18px;font-weight:600}
+.now-tag{display:none;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);background:var(--accent-soft);padding:3px 8px;border-radius:999px}
+.step.now .now-tag{display:inline-block}
+.time{margin-left:auto;font-size:13px;font-weight:600;color:var(--fg-2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.goal{color:var(--fg-2);font-size:14px;margin-top:-6px}
+.say{display:flex;flex-direction:column;gap:8px}
+.say-l{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-3)}
+.line{font-size:16.5px;font-weight:500;line-height:1.6;color:var(--fg);max-width:68ch}
+.line-s{font-weight:500;color:var(--fg)}
+.alt{font-size:14.5px;color:var(--fg);max-width:68ch}
+.alt b{font-weight:600;color:var(--fg-2);margin-right:4px}
+.note{font-size:13.5px;color:var(--fg-2)}
+.ph,.slot{background:var(--accent-soft);color:var(--accent);border-radius:6px;padding:0 5px;font-weight:600;white-space:nowrap}
+.ph.filled{background:transparent;color:inherit;padding:0;font-weight:600}
+.branch{display:grid;grid-template-columns:150px minmax(0,1fr);gap:12px;background:var(--surface);border:1px solid var(--surface-line);border-radius:var(--r-m);padding:12px 14px;font-size:14.5px}
+.branch .if{font-weight:600;color:var(--fg-2);font-size:13px;padding-top:1px}
+.branch > div:last-child{display:flex;flex-direction:column;gap:4px;min-width:0}
+.cap{display:flex;flex-direction:column;gap:8px}
+.cap-l{font-size:12px;font-weight:600;color:var(--fg-2)}
+
+.q{border-top:1px solid var(--line);padding-top:16px;display:flex;flex-direction:column;gap:10px}
+.q-head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.q-n{font-size:12px;font-weight:600;color:var(--accent);font-variant-numeric:tabular-nums}
+.q-head h3{font-size:15px;font-weight:600}
+.q-why{font-size:12.5px;color:var(--fg-3)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips button{font:500 13.5px var(--font);border:1px solid var(--line);background:var(--bg);color:var(--fg);padding:7px 13px;border-radius:999px;cursor:pointer}
+.chips button:hover{border-color:var(--accent)}
+.chips button[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.chips button[data-tone=warn][aria-pressed=true]{background:var(--warn-soft);border-color:var(--warn);color:var(--warn-ink)}
+.chips button[data-tone=bad][aria-pressed=true]{background:var(--bad-soft);border-color:var(--bad);color:var(--bad-ink)}
+.hint{font-size:13.5px;color:var(--fg-2)}
+.hint b{color:var(--accent);font-weight:600}
+
+/* mode: cheat-sheet */
+body.mode-short .full,body.mode-short .note,body.mode-short .goal{display:none}
+body:not(.mode-short) .short{display:none}
+
+/* side */
+.side{position:sticky;top:calc(env(safe-area-inset-top,0px) + 88px);display:flex;flex-direction:column;gap:14px;max-height:calc(100vh - 104px);overflow:auto;padding-bottom:4px;min-width:0}
+.panel{border:1px solid var(--line);border-radius:var(--r-l);padding:18px;display:flex;flex-direction:column;gap:12px;background:var(--bg)}
+.panel-h{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-3)}
+.pill{display:flex;flex-direction:column;gap:2px;padding:14px 16px;border-radius:var(--r-m);background:var(--surface);color:var(--fg-2)}
+.pill-big{font-size:22px;font-weight:600;line-height:1.2}
+.pill-sub{font-size:13.5px}
+.pill[data-status=green]{background:var(--ok-soft);color:var(--ok-ink)}
+.pill[data-status=yellow]{background:var(--warn-soft);color:var(--warn-ink)}
+.pill[data-status=red]{background:var(--bad-soft);color:var(--bad-ink)}
+.checks{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.checks li{display:grid;grid-template-columns:20px minmax(0,1fr) auto;gap:10px;align-items:center;font-size:14px}
+.mark{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:600;line-height:1;border:1.5px solid var(--line);color:var(--fg-3)}
+.mark[data-s=ok]{background:var(--ok);border-color:var(--ok);color:var(--bg)}
+.mark[data-s=warn]{background:var(--warn);border-color:var(--warn);color:var(--bg)}
+.mark[data-s=fail]{background:var(--bad);border-color:var(--bad);color:var(--bg)}
+.checks .v{font-size:12.5px;color:var(--fg-2);text-align:right;white-space:nowrap}
+.red-say{display:flex;flex-direction:column;gap:6px;border-top:1px solid var(--line);padding-top:12px}
+.red-say .line{font-size:15px}
+#crm{min-height:220px;font-size:12.5px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;background:var(--surface);border-color:var(--surface-line);color:var(--fg)}
+.row-btns{display:flex;gap:8px;flex-wrap:wrap}
+details{border-top:1px solid var(--line);padding-top:10px}
+details:first-of-type{border-top:0;padding-top:0}
+summary{cursor:pointer;font-weight:600;font-size:14px;list-style:none;display:flex;justify-content:space-between;gap:8px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";color:var(--accent);font-weight:600}
+details[open] summary::after{content:"–"}
+details .say{margin-top:8px}
+details .line{font-size:14.5px}
+details .note{margin-top:4px}
+
+/* bottom blocks */
+.block{padding-block:8px 28px;display:flex;flex-direction:column;gap:14px}
+.sec-h{font-size:20px;font-weight:500;letter-spacing:-.005em}
+.flow{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.flow li{border:1px solid var(--line);border-radius:var(--r-l);padding:16px;display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.when{font-size:12px;font-weight:600;color:var(--accent);letter-spacing:.02em}
+.flow .what{font-weight:600}
+.msg{font-size:14px;color:var(--fg);background:var(--surface);border:1px solid var(--surface-line);border-radius:var(--r-m);padding:10px 12px;line-height:1.55}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.msg-card{border:1px solid var(--line);border-radius:var(--r-l);padding:16px;display:flex;flex-direction:column;gap:10px;align-items:flex-start}
+.foot{padding-block:4px 36px;font-size:12.5px;color:var(--fg-3)}
+
+/* responsive */
+@media (max-width:1060px){
+  .main{grid-template-columns:minmax(0,1fr)}
+  .side{position:static;max-height:none;overflow:visible}
+  .flow{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:760px){
+  .setup{grid-template-columns:minmax(0,1fr)}
+  .tb-in{flex-wrap:wrap;gap:12px}
+  .segs{flex-basis:100%}
+  .seg .sl,.seg .st{display:none}
+  .tb-btns{margin-left:auto}
+  .branch{grid-template-columns:minmax(0,1fr);gap:4px}
+  .two,.flow{grid-template-columns:minmax(0,1fr)}
+  .step{padding:16px}
+  .line{font-size:16px}
+  .time{font-size:12px}
+}
+@media (prefers-reduced-motion:reduce){.step{transition:none}}
+</style>
+
+<header class="wrap top">
+  <div class="eyebrow">Intch · SDR</div>
+  <h1>Звонок-подтверждение <span class="mute">— диагностика за 5 минут</span></h1>
+  <p class="lede">Задачи: подтвердить слот, проверить, наш ли лид, собрать вводные для эксперта и повысить явку. На этом звонке мы не продаём.</p>
+  <div class="setup">
+    <div class="field"><label for="f-name">Имя лида</label><input id="f-name" type="text" placeholder="Например, Daniel" autocomplete="off"></div>
+    <div class="field"><label for="f-slot">Слот, как скажете лиду</label><input id="f-slot" type="text" placeholder="Thursday, 15:00 your time" autocomplete="off"></div>
+    <div class="field"><label for="f-expert">Эксперт</label><input id="f-expert" type="text" placeholder="Имя эксперта" autocomplete="off"></div>
+    <div class="field">
+      <span class="label" id="mode-l">Вид</span>
+      <div class="seg-toggle" role="group" aria-labelledby="mode-l">
+        <button type="button" data-mode="full" aria-pressed="true">Полный скрипт</button>
+        <button type="button" data-mode="short" aria-pressed="false">Шпаргалка</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="timerbar" id="timerbar">
+  <div class="wrap tb-in">
+    <div class="clock">
+      <div class="t" id="t-time">0:00</div>
+      <div class="t-sub">из 5:00 · <span id="t-now">таймер не запущен</span></div>
+    </div>
+    <div class="tb-btns">
+      <button type="button" class="btn primary" id="t-start">Старт</button>
+      <button type="button" class="btn" id="t-reset">Сброс</button>
+    </div>
+    <div class="segs" aria-hidden="true">
+      <div class="seg"><span class="sl">Открытие</span><span class="track"><span class="fill"></span></span><span class="st">0:30</span></div>
+      <div class="seg"><span class="sl">Слот</span><span class="track"><span class="fill"></span></span><span class="st">1:00</span></div>
+      <div class="seg"><span class="sl">Квалификация</span><span class="track"><span class="fill"></span></span><span class="st">3:30</span></div>
+      <div class="seg"><span class="sl">Next steps</span><span class="track"><span class="fill"></span></span><span class="st">4:30</span></div>
+      <div class="seg"><span class="sl">Финал</span><span class="track"><span class="fill"></span></span><span class="st">5:00</span></div>
+    </div>
+  </div>
+</div>
+
+<main class="wrap main">
+  <div class="steps">
+
+    <section class="prep">
+      <h2>До звонка</h2>
+      <ul>
+        <li><span>Звоним в течение 15 минут после брони, но только в рабочие часы лида. Если у него ночь, отправляем сообщение и звоним утром.</span></li>
+        <li><span>2–3 минуты на сайт и LinkedIn. Заранее заполни поле «Что продают · кому · рынки» в Q1: на звонке ты только подтверждаешь.</span></li>
+      </ul>
+    </section>
+
+    <article class="step" data-step="0">
+      <div class="step-head"><span class="num">1</span><h2>Открытие</h2><span class="now-tag">сейчас</span><span class="time">0:00–0:30</span></div>
+      <p class="goal">Цель: получить разрешение на 3 минуты.</p>
+      <div class="say">
+        <span class="say-l">Говорим</span>
+        <p class="line full">Hi <span class="ph" data-ph="name"></span>, this is Gregory from Intch. You just booked a growth diagnostic with our expert for <span class="ph" data-ph="slot"></span>. As mentioned in the message, I'm calling to confirm it and ask a few quick questions so the expert comes prepared. Takes about 3 minutes. Is now OK?</p>
+        <p class="line short">Hi <span class="ph" data-ph="name"></span>, Gregory from Intch. Confirming your diagnostic on <span class="ph" data-ph="slot"></span>. 3 minutes OK?</p>
+      </div>
+      <div class="branch">
+        <div class="if">Неудобно говорить</div>
+        <div><p class="line-s">"No problem. When's better today?"</p><p class="note">Запиши время и перезвони. Если сегодня никак, отправь вопросы в WhatsApp (шаблон «Сразу» внизу страницы).</p></div>
+      </div>
+    </article>
+
+    <article class="step" data-step="1">
+      <div class="step-head"><span class="num">2</span><h2>Подтверждение слота</h2><span class="now-tag">сейчас</span><span class="time">0:30–1:00</span></div>
+      <p class="goal">Цель: слот в силе, на встрече будет тот, кто принимает решения.</p>
+      <div class="say">
+        <span class="say-l">Говорим</span>
+        <p class="line full">We have you on <span class="ph" data-ph="slot"></span>. Does that still work?</p>
+        <p class="line full">Will it be just you, or is anyone else involved in growth decisions, like a co-founder or head of sales?</p>
+        <p class="line short">Still works? Anyone else joining?</p>
+      </div>
+      <div class="cap">
+        <span class="cap-l">Кто решает</span>
+        <div class="chips" data-field="dm">
+          <button type="button" data-v="self">Сам решает</button>
+          <button type="button" data-v="invite">Позовёт ЛПР</button>
+          <button type="button" data-v="no" data-tone="warn">Не ЛПР</button>
+        </div>
+      </div>
+      <div class="branch">
+        <div class="if">Решает кто-то ещё</div>
+        <div><p class="line-s">"It'd be great to have them on the call, so the expert can go straight to decisions. Could you forward them the invite?"</p></div>
+      </div>
+    </article>
+
+    <article class="step" data-step="2">
+      <div class="step-head"><span class="num">3</span><h2>Квалификация</h2><span class="now-tag">сейчас</span><span class="time">1:00–3:30</span></div>
+      <p class="goal">Цель: B2B, выручка от $10K/мес, понятная боль, готовность действовать. Отмечай ответы, статус справа считается сам.</p>
+      <div class="say">
+        <span class="say-l">Переход</span>
+        <p class="line full">Great. A few quick questions so the expert can look at your company before the call.</p>
+        <p class="line short">A few quick questions for the expert.</p>
+      </div>
+
+      <div class="q">
+        <div class="q-head"><span class="q-n">Q1</span><h3>Бизнес</h3><span class="q-why">проверяем B2B</span></div>
+        <p class="line full">I had a quick look at your site. You help <span class="slot">[who]</span> with <span class="slot">[what]</span>, mostly in <span class="slot">[markets]</span>, right?</p>
+        <p class="alt full"><b>Если сайт пустой:</b> "In one sentence, what do you sell and who usually buys it?"</p>
+        <p class="line short">What do you sell, and to whom?</p>
+        <div class="chips" data-field="biz">
+          <button type="button" data-v="b2b">B2B</button>
+          <button type="button" data-v="mixed" data-tone="warn">B2B + B2C</button>
+          <button type="button" data-v="b2c" data-tone="bad">B2C</button>
+        </div>
+        <textarea id="f-sell" rows="2" placeholder="Что продают · кому · рынки. Заполни до звонка по сайту"></textarea>
+      </div>
+
+      <div class="q">
+        <div class="q-head"><span class="q-n">Q2</span><h3>Выручка</h3><span class="q-why">порог $10K/мес</span></div>
+        <p class="line full">So the expert pitches recommendations at the right level: roughly, is your monthly revenue under 10K dollars, 10 to 50K, or above 50?</p>
+        <p class="line short">Monthly revenue: under 10K, 10–50, or 50+?</p>
+        <p class="note">Диапазоны вместо точной цифры: на них отвечают охотнее.</p>
+        <div class="chips" data-field="rev">
+          <button type="button" data-v="lt10" data-tone="bad">&lt; $10K</button>
+          <button type="button" data-v="10-50">$10–50K</button>
+          <button type="button" data-v="50p">$50K+</button>
+          <button type="button" data-v="na" data-tone="warn">Не назвал</button>
+        </div>
+      </div>
+
+      <div class="q">
+        <div class="q-head"><span class="q-n">Q3</span><h3>Боль</h3><span class="q-why">что застряло</span></div>
+        <p class="line full">What made you book the diagnostic now? What's the main thing that's stuck?</p>
+        <p class="alt full"><b>Если размыто:</b> "Is it more about not enough leads, leads not turning into deals, or entering a new market?"</p>
+        <p class="line short">What's stuck right now?</p>
+        <div class="chips" data-field="pain">
+          <button type="button" data-v="leads">Мало лидов</button>
+          <button type="button" data-v="conv">Лиды не конвертятся</button>
+          <button type="button" data-v="market">Новый рынок</button>
+          <button type="button" data-v="vague" data-tone="warn">Размыто</button>
+        </div>
+        <p class="hint" id="sprint-hint" hidden></p>
+      </div>
+
+      <div class="q">
+        <div class="q-head"><span class="q-n">Q4</span><h3>Что уже есть</h3><span class="q-why">каналы и попытки</span></div>
+        <p class="line full">Where do clients come from today, and what have you already tried?</p>
+        <p class="line short">Where do clients come from today?</p>
+        <textarea id="f-channels" rows="2" placeholder="Откуда клиенты сейчас, что уже пробовали"></textarea>
+      </div>
+
+      <div class="q">
+        <div class="q-head"><span class="q-n">Q5</span><h3>Срочность</h3><span class="q-why">готов действовать</span></div>
+        <p class="line full">If the diagnostic shows a clear plan, how soon would you want to act: this month, this quarter, or later?</p>
+        <p class="line short">When would you act on a plan?</p>
+        <div class="chips" data-field="time">
+          <button type="button" data-v="month">Этот месяц</button>
+          <button type="button" data-v="quarter">Этот квартал</button>
+          <button type="button" data-v="later" data-tone="warn">Позже</button>
+        </div>
+      </div>
+    </article>
+
+    <article class="step" data-step="3">
+      <div class="step-head"><span class="num">4</span><h2>Next steps</h2><span class="now-tag">сейчас</span><span class="time">3:30–4:30</span></div>
+      <p class="goal">Цель: лид понимает, что будет дальше, и знает, как перенести слот.</p>
+      <div class="say">
+        <span class="say-l">Говорим</span>
+        <p class="line full">Perfect, that's exactly what the expert needs. Here's what happens next.</p>
+        <p class="line full">You'll get a calendar invite with the link. Before the call, <span class="ph" data-ph="expert"></span> will review your company and come with first hypotheses, so you won't spend time on basics.</p>
+        <p class="line full">We'll send a reminder an hour before on WhatsApp. One ask: if anything changes, just reply to that message and we'll move the slot. Our experts' time is booked tightly.</p>
+        <p class="line short">Invite with the link is coming. <span class="ph" data-ph="expert"></span> prepares first hypotheses. Reminder 1 hour before. Reply to move the slot.</p>
+      </div>
+    </article>
+
+    <article class="step" data-step="4">
+      <div class="step-head"><span class="num">5</span><h2>Финал</h2><span class="now-tag">сейчас</span><span class="time">4:30–5:00</span></div>
+      <div class="say">
+        <span class="say-l">Говорим</span>
+        <p class="line full">Any questions before the call? Great. <span class="ph" data-ph="expert"></span> will see you on <span class="ph" data-ph="slot"></span>. Have a good one.</p>
+        <p class="line short">Questions? <span class="ph" data-ph="expert"></span> will see you on <span class="ph" data-ph="slot"></span>.</p>
+      </div>
+      <p class="note">Если статус Red, вместо этого финала говори текст из панели «Статус лида».</p>
+    </article>
+  </div>
+
+  <aside class="side">
+    <section class="panel" aria-live="polite">
+      <h3 class="panel-h">Статус лида</h3>
+      <div class="pill" id="st-pill" data-status="none"><span class="pill-big" id="st-big">Нет ответов</span><span class="pill-sub" id="st-sub">Отмечай ответы по ходу звонка</span></div>
+      <ul class="checks" id="st-checks"></ul>
+      <div class="red-say" id="red-say" hidden>
+        <span class="say-l">Говорим вместо финала</span>
+        <p class="line">Thanks for being open. To be upfront: the diagnostic is built for B2B companies at $10K+ a month. At your stage the expert would end up giving generic advice, and I don't want to waste your time. What would help more right now is our Playbook, a set of growth ideas that have worked in your niche. I'll send you the link right after this call.</p>
+        <p class="note">После звонка: ссылка на Playbook, слот освободить.</p>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h3 class="panel-h">Карточка для CRM</h3>
+      <div class="field"><label for="f-notes">Заметки для эксперта</label><textarea id="f-notes" rows="2" placeholder="Что ещё важно знать перед диагностикой"></textarea></div>
+      <textarea id="crm" readonly aria-label="Карточка для CRM"></textarea>
+      <div class="row-btns">
+        <button type="button" class="btn primary" id="crm-copy">Скопировать карточку</button>
+        <button type="button" class="btn" id="new-call">Новый звонок</button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h3 class="panel-h">Возражения</h3>
+      <details>
+        <summary>«Это продажа?»</summary>
+        <div class="say"><p class="line">"No, I'm just confirming the slot and collecting context for the expert. The diagnostic is free, and the expert will only talk about working together if there's a clear fit."</p></div>
+      </details>
+      <details>
+        <summary>«Сколько стоит?»</summary>
+        <div class="say"><p class="line">"The diagnostic is free. Any paid options depend on what the expert finds, and they'll lay them out at the end if relevant."</p></div>
+      </details>
+      <details>
+        <summary>Не хочет называть выручку</summary>
+        <div class="say"><p class="line">"Totally fine, a rough range is enough. It's just so the expert doesn't suggest things that are too early or too small for you."</p></div>
+        <p class="note">Всё равно нет: пропусти и отметь «Не назвал».</p>
+      </details>
+      <details>
+        <summary>«Пришлите всё письмом»</summary>
+        <div class="say"><p class="line">"Sure. Just two quick ones now, and I'll send the rest: what do you sell and to whom, and roughly what's your monthly revenue?"</p></div>
+      </details>
+      <details>
+        <summary>«Нет времени»</summary>
+        <div class="say"><p class="line">"No problem. When's better today?"</p></div>
+        <p class="note">Сегодня никак: вопросы в WhatsApp, шаблон «Сразу» внизу.</p>
+      </details>
+    </section>
+  </aside>
+</main>
+
+<section class="wrap block">
+  <h2 class="sec-h">Если не взял трубку</h2>
+  <ol class="flow">
+    <li>
+      <span class="when">Сразу</span>
+      <p class="what">Сообщение в WhatsApp или SMS</p>
+      <p class="msg">Hi <span class="ph" data-ph="name"></span>, Gregory from Intch. Just tried calling to confirm your diagnostic on <span class="ph" data-ph="slot"></span>. When's good for a 3-min call? Or just reply here: 1) what you sell and to whom, 2) rough monthly revenue, 3) your main growth bottleneck.</p>
+      <button type="button" class="btn sm" data-copy="noanswer">Скопировать</button>
+    </li>
+    <li>
+      <span class="when">Через 1–2 часа</span>
+      <p class="what">Повторный звонок</p>
+      <p class="note">В рабочие часы лида.</p>
+    </li>
+    <li>
+      <span class="when">На следующий день</span>
+      <p class="what">Ещё один звонок</p>
+      <p class="note">Если ответил в мессенджере, отметь ответы в Q1–Q5 и звонок не нужен.</p>
+    </li>
+    <li>
+      <span class="when">За 24 часа до встречи</span>
+      <p class="what">Если так и не поговорили</p>
+      <p class="msg">Hi <span class="ph" data-ph="name"></span>, your diagnostic with <span class="ph" data-ph="expert"></span> is tomorrow, <span class="ph" data-ph="slot"></span>. Reply YES to keep your slot, or tell us a better time.</p>
+      <button type="button" class="btn sm" data-copy="reminder">Скопировать</button>
+    </li>
+  </ol>
+</section>
+
+<section class="wrap block">
+  <h2 class="sec-h">Сообщение после брони <span class="mute">— уходит лиду сразу</span></h2>
+  <div class="two">
+    <div class="msg-card">
+      <span class="say-l">Полная версия</span>
+      <p class="msg">Thanks for booking your growth diagnostic for <span class="ph" data-ph="slot"></span>. Within 15 minutes, Gregory from our team will call you from <span class="slot">[+XX XXX XXX XXX]</span> to confirm the slot and ask 3 quick questions so our expert comes prepared. Please save the number so you don't miss the call.</p>
+      <button type="button" class="btn sm" data-copy="booked">Скопировать</button>
+    </div>
+    <div class="msg-card">
+      <span class="say-l">Короткая версия</span>
+      <p class="msg">Booked: <span class="ph" data-ph="slot"></span>. Gregory from Intch will call within 15 min from <span class="slot">[+XX XXX XXX XXX]</span> to confirm and prep the expert. Takes 3 min.</p>
+      <button type="button" class="btn sm" data-copy="bookedShort">Скопировать</button>
+    </div>
+  </div>
+</section>
+
+<footer class="wrap foot">Ответы сохраняются только в этом браузере. Кнопка «Новый звонок» очищает их и сбрасывает таймер.</footer>
+
+<script>
+(function(){
+  var KEY = 'intch-sdr-call-v1';
+  var DEF = { name:'[Name]', slot:'[day, time]', expert:'[Expert]' };
+  var FRESH = { name:'', slot:'', expert:'', mode:'full', dm:null, biz:null, rev:null, pain:null, time:null, sell:'', channels:'', notes:'' };
+  var s = Object.assign({}, FRESH);
+  try { var raw = localStorage.getItem(KEY); if (raw) s = Object.assign(s, JSON.parse(raw)); } catch(e) {}
+  function save(){ try { localStorage.setItem(KEY, JSON.stringify(s)); } catch(e) {} }
+  function $(q){ return document.querySelector(q); }
+  function $$(q, r){ return Array.prototype.slice.call((r || document).querySelectorAll(q)); }
+  function val(k){ return String(s[k] || '').trim(); }
+  function fill(t){ return t.replace(/\{(name|slot|expert)\}/g, function(m, k){ return val(k) || DEF[k]; }); }
+
+  var RU = {
+    biz:  { b2b:'B2B', mixed:'B2B + B2C', b2c:'B2C' },
+    rev:  { lt10:'< $10K', '10-50':'$10–50K', '50p':'$50K+', na:'не назвал' },
+    dm:   { self:'сам решает', invite:'позовёт ЛПР', no:'не ЛПР' },
+    pain: { leads:'мало лидов', conv:'не конвертятся', market:'новый рынок', vague:'размыто' },
+    time: { month:'этот месяц', quarter:'этот квартал', later:'позже' }
+  };
+  var EN = {
+    biz:  { b2b:'B2B', mixed:'B2B + B2C', b2c:'B2C' },
+    rev:  { lt10:'under $10K/mo', '10-50':'$10–50K/mo', '50p':'$50K+/mo', na:'not shared' },
+    dm:   { self:'founder / decision maker', invite:'will bring the decision maker', no:'not the decision maker' },
+    pain: { leads:'not enough leads', conv:'leads not turning into deals', market:'entering a new market', vague:'unclear' },
+    time: { month:'this month', quarter:'this quarter', later:'later' }
+  };
+  var SPRINT = { leads:'Qualified Pipeline Sprint', conv:'Sales Engine Sprint', market:'Market Access Sprint' };
+
+  var TPL = {
+    noanswer: "Hi {name}, Gregory from Intch. Just tried calling to confirm your diagnostic on {slot}. When's good for a 3-min call? Or just reply here: 1) what you sell and to whom, 2) rough monthly revenue, 3) your main growth bottleneck.",
+    reminder: "Hi {name}, your diagnostic with {expert} is tomorrow, {slot}. Reply YES to keep your slot, or tell us a better time.",
+    booked: "Thanks for booking your growth diagnostic for {slot}. Within 15 minutes, Gregory from our team will call you from [+XX XXX XXX XXX] to confirm the slot and ask 3 quick questions so our expert comes prepared. Please save the number so you don't miss the call.",
+    bookedShort: "Booked: {slot}. Gregory from Intch will call within 15 min from [+XX XXX XXX XXX] to confirm and prep the expert. Takes 3 min."
+  };
+
+  function checks(){
+    return [
+      { k:'biz',  ru:'B2B',                      en:'B2B',                        st: s.biz==null ? 'unk' : s.biz==='b2c' ? 'fail' : s.biz==='mixed' ? 'warn' : 'ok' },
+      { k:'rev',  ru:'Выручка от $10K/мес',      en:'revenue $10K+ not confirmed', st: s.rev==null ? 'unk' : s.rev==='lt10' ? 'fail' : s.rev==='na' ? 'warn' : 'ok' },
+      { k:'dm',   ru:'ЛПР на встрече',           en:'no decision maker on the call', st: s.dm==null ? 'unk' : s.dm==='no' ? 'warn' : 'ok' },
+      { k:'pain', ru:'Понятная боль',            en:'bottleneck unclear',         st: s.pain==null ? 'unk' : s.pain==='vague' ? 'warn' : 'ok' },
+      { k:'time', ru:'Действует в этом квартале', en:'timing: later',             st: s.time==null ? 'unk' : s.time==='later' ? 'warn' : 'ok' }
+    ];
+  }
+  function status(cs){
+    var n = function(x){ return cs.filter(function(c){ return c.st===x; }).length; };
+    if (n('fail')) return 'red';
+    if (n('unk') === cs.length) return 'none';
+    if (n('warn')) return 'yellow';
+    if (n('unk')) return 'partial';
+    return 'green';
+  }
+  var ST = {
+    none:    ['Нет ответов', 'Отмечай ответы по ходу звонка'],
+    partial: ['В процессе', 'Пока всё сходится. Отметь остальные ответы'],
+    green:   ['Green', 'Передаём эксперту, встреча в силе'],
+    yellow:  ['Yellow', 'Встреча в силе, эксперту флаг по пунктам ниже'],
+    red:     ['Red', 'Предложить Playbook, освободить слот']
+  };
+  var ST_EN = { none:'IN PROGRESS', partial:'IN PROGRESS', green:'GREEN — pass to expert', yellow:'YELLOW — keep the meeting, flag to expert', red:'RED — offer Playbook, release the slot' };
+  var MARK = { ok:'✓', warn:'!', fail:'×', unk:'' };
+
+  function crmText(st, cs){
+    var line = function(label, v){ return label + ': ' + (v || '—'); };
+    var flags = cs.filter(function(c){ return c.st==='warn' || c.st==='fail'; }).map(function(c){ return c.en; });
+    var out = [
+      'INTCH · DIAGNOSTIC LEAD',
+      line('Lead', val('name')) + ' · ' + line('Slot', val('slot')) + ' · ' + line('Expert', val('expert')),
+      'Status: ' + ST_EN[st] + (flags.length && st!=='red' ? ' (' + flags.join('; ') + ')' : ''),
+      '',
+      line('What they sell / who buys / markets', val('sell')),
+      line('Business model', EN.biz[s.biz]),
+      line('Revenue', EN.rev[s.rev]),
+      line('Decision maker', EN.dm[s.dm]),
+      line('Main bottleneck', EN.pain[s.pain]),
+      line('Suggested sprint', SPRINT[s.pain]),
+      line('Client sources / already tried', val('channels')),
+      line('Timing', EN.time[s.time]),
+      line('Notes', val('notes'))
+    ];
+    return out.join('\n');
+  }
+
+  function render(){
+    document.body.classList.toggle('mode-short', s.mode === 'short');
+    $$('[data-mode]').forEach(function(b){ b.setAttribute('aria-pressed', String(b.dataset.mode === s.mode)); });
+    $$('[data-ph]').forEach(function(el){ var v = val(el.dataset.ph); el.textContent = v || DEF[el.dataset.ph]; el.classList.toggle('filled', !!v); });
+    $$('.chips[data-field]').forEach(function(g){ $$('button', g).forEach(function(b){ b.setAttribute('aria-pressed', String(s[g.dataset.field] === b.dataset.v)); }); });
+
+    var hint = $('#sprint-hint');
+    if (SPRINT[s.pain]) { hint.hidden = false; hint.innerHTML = 'Подходящий спринт: <b>' + SPRINT[s.pain] + '</b>. Лиду не озвучиваем.'; }
+    else hint.hidden = true;
+
+    var cs = checks(), st = status(cs);
+    var pill = $('#st-pill'); pill.dataset.status = st === 'partial' ? 'none' : st;
+    $('#st-big').textContent = ST[st][0];
+    $('#st-sub').textContent = ST[st][1];
+    $('#st-checks').innerHTML = cs.map(function(c){
+      var v = c.st === 'unk' ? '—' : RU[c.k][s[c.k]];
+      return '<li><span class="mark" data-s="' + c.st + '" aria-hidden="true">' + MARK[c.st] + '</span><span>' + c.ru + '</span><span class="v">' + v + '</span></li>';
+    }).join('');
+    $('#red-say').hidden = st !== 'red';
+    $('#crm').value = crmText(st, cs);
+  }
+
+  ['name','slot','expert','sell','channels','notes'].forEach(function(k){
+    var el = document.getElementById('f-' + k); if (!el) return;
+    el.value = s[k] || '';
+    el.addEventListener('input', function(){ s[k] = el.value; save(); render(); });
+  });
+  $$('.chips[data-field]').forEach(function(g){
+    var f = g.dataset.field;
+    $$('button', g).forEach(function(b){ b.addEventListener('click', function(){ s[f] = s[f] === b.dataset.v ? null : b.dataset.v; save(); render(); }); });
+  });
+  $$('[data-mode]').forEach(function(b){ b.addEventListener('click', function(){ s.mode = b.dataset.mode; save(); render(); }); });
+
+  function flash(btn, text){
+    var old = btn.dataset.label || btn.textContent; btn.dataset.label = old;
+    btn.textContent = text; clearTimeout(btn._t);
+    btn._t = setTimeout(function(){ btn.textContent = old; }, 1600);
+  }
+  function copy(text, btn, selectEl){
+    var fallback = function(){
+      var ta = selectEl;
+      if (!ta) { ta = document.createElement('textarea'); ta.value = text; ta.setAttribute('readonly',''); ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); }
+      ta.focus(); ta.select();
+      var ok = false; try { ok = document.execCommand('copy'); } catch(e) {}
+      if (!selectEl) document.body.removeChild(ta);
+      flash(btn, ok ? 'Скопировано' : 'Выделено, нажми ⌘C');
+    };
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function(){ flash(btn, 'Скопировано'); }, fallback);
+      } else fallback();
+    } catch(e) { fallback(); }
+  }
+  $('#crm-copy').addEventListener('click', function(e){ copy($('#crm').value, e.currentTarget, $('#crm')); });
+  $$('[data-copy]').forEach(function(b){ b.addEventListener('click', function(){ copy(fill(TPL[b.dataset.copy]), b); }); });
+
+  /* timer */
+  var BOUNDS = [30, 60, 210, 270, 300];
+  var NAMES = ['Открытие', 'Подтверждение слота', 'Квалификация', 'Next steps', 'Финал'];
+  var t0 = null, acc = 0, iv = null, lastIdx = -1;
+  function elapsed(){ return acc + (t0 ? (Date.now() - t0) / 1000 : 0); }
+  function fmt(sec){ sec = Math.floor(sec); return Math.floor(sec / 60) + ':' + String(sec % 60).padStart(2, '0'); }
+  function tick(){
+    var e = elapsed(), started = t0 !== null || acc > 0, over = e > 300;
+    $('#t-time').textContent = fmt(e);
+    $('#timerbar').classList.toggle('over', over);
+    var idx = BOUNDS.findIndex(function(b){ return e < b; }); if (idx === -1) idx = 4;
+    $$('.seg').forEach(function(sg, i){
+      var start = i ? BOUNDS[i - 1] : 0;
+      var p = Math.max(0, Math.min(1, (e - start) / (BOUNDS[i] - start)));
+      sg.querySelector('.fill').style.width = (p * 100) + '%';
+      sg.classList.toggle('active', started && i === idx);
+    });
+    $$('.step').forEach(function(st){ st.classList.toggle('now', started && Number(st.dataset.step) === idx); });
+    $('#t-now').textContent = !started ? 'таймер не запущен' : over ? 'перебор +' + fmt(e - 300) : NAMES[idx];
+    lastIdx = idx;
+  }
+  $('#t-start').addEventListener('click', function(e){
+    var b = e.currentTarget;
+    if (t0) { acc = elapsed(); t0 = null; clearInterval(iv); b.textContent = 'Продолжить'; }
+    else { t0 = Date.now(); iv = setInterval(tick, 250); b.textContent = 'Пауза'; }
+    tick();
+  });
+  function resetTimer(){ clearInterval(iv); t0 = null; acc = 0; $('#t-start').textContent = 'Старт'; tick(); }
+  $('#t-reset').addEventListener('click', resetTimer);
+
+  var armed = null;
+  $('#new-call').addEventListener('click', function(e){
+    var b = e.currentTarget;
+    if (!armed) {
+      b.textContent = 'Точно очистить?'; b.classList.add('danger');
+      armed = setTimeout(function(){ armed = null; b.textContent = 'Новый звонок'; b.classList.remove('danger'); }, 3000);
+      return;
+    }
+    clearTimeout(armed); armed = null; b.textContent = 'Новый звонок'; b.classList.remove('danger');
+    s = Object.assign({}, FRESH, { expert: s.expert, mode: s.mode });
+    ['name','slot','expert','sell','channels','notes'].forEach(function(k){ var el = document.getElementById('f-' + k); if (el) el.value = s[k] || ''; });
+    save(); resetTimer(); render(); window.scrollTo({ top: 0 });
+  });
+
+  render(); tick();
+})();
+</script>
+
+</body></html>
